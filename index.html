@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>تحدي الذكاء الاصطناعي — المنابر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  /* هوية المنابر: تدرج أزرق ورصاصي */
+  --navy:#0b0f33; --navy2:#1b2363; --brand:#293280; --blue:#3446b8; --sky:#6f86f0; --ice:#d4dbff;
+  --steel:#6b6866; --grey:#a4a09e; --silver:#e6e3e1;
+  --ink:#1b2363; --muted:#b4b6cc;
+  --accent:#a5b4ff; --gold:#ffc94d; --ok:#22c55e; --bad:#ef4444;
+  --glass:rgba(255,255,255,.07); --line:rgba(212,219,255,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{
+  font-family:'Cairo',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;
+  color:#fff; min-height:100vh; overflow-x:hidden;
+  background:
+    radial-gradient(900px 600px at 90% -10%, rgba(111,134,240,.30), transparent 60%),
+    radial-gradient(800px 600px at -10% 110%, rgba(164,160,158,.32), transparent 60%),
+    linear-gradient(155deg, var(--navy) 0%, var(--navy2) 45%, #393c57 80%, #5e5b59 100%);
+  background-attachment:fixed;
+}
+button{font-family:inherit;cursor:pointer;border:0}
+input{font-family:inherit}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:24px;padding:28px;backdrop-filter:blur(8px);width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.narrow{max-width:440px;text-align:center}
+.logo{font-size:60px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.35))}
+h1{font-weight:900;font-size:28px;line-height:1.3}
+h2{font-weight:900;font-size:22px}
+.err{color:#fecaca;min-height:24px;margin-top:10px;font-weight:600}
+.field{display:block;width:100%;font-size:18px;padding:14px 16px;border-radius:14px;border:2px solid var(--line);background:rgba(3,15,32,.45);color:#fff;margin-top:12px;text-align:center;outline:none}
+.field:focus{border-color:var(--sky)}
+.field::placeholder{color:#7f93ad}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:14px;font-weight:700;font-size:17px;background:rgba(255,255,255,.1);color:#fff;border:1px solid var(--line);transition:transform .08s, filter .15s}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,var(--blue),var(--sky));border:0;color:#fff;box-shadow:0 8px 24px rgba(52,70,184,.5)}
+.btn.big{width:100%;font-size:20px;padding:16px;margin-top:16px}
+.btn.huge{font-size:clamp(20px,2vw,30px);padding:18px 40px}
+.btn.ghost{background:transparent;border:0;color:var(--muted);font-size:14px}
+.btn:disabled{opacity:.45;pointer-events:none}
+.stack{display:flex;flex-direction:column;gap:12px}
+.banner{background:rgba(111,134,240,.12);border:1px dashed rgba(111,134,240,.6);color:var(--ice);padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.7;margin-bottom:16px;text-align:right}
+.steps{padding-inline-start:1.3em;margin:0}
+.steps li{margin:4px 0;padding-inline-start:4px}
+.steps li::marker{color:var(--accent);font-weight:900}
+.tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid var(--line)}
+.tools button{background:rgba(255,255,255,.08);border:1px solid var(--line);color:#fff;border-radius:10px;padding:7px 12px;font-weight:700;font-size:clamp(12px,.95vw,16px)}
+.tools button:hover{background:rgba(255,255,255,.18)}
+.tools button.warn{border-color:rgba(239,68,68,.5)}
+.tools button.on{background:rgba(255,201,77,.25);border-color:rgba(255,201,77,.7)}
+.timer.paused{background:linear-gradient(135deg,#a4a09e,#6b6866);animation:none}
+.pausebar{text-align:center;font-weight:900;font-size:clamp(20px,2.2vw,36px);color:var(--gold);animation:pulse 1.4s infinite}
+.chip .kick{margin-inline-start:8px;background:rgba(239,68,68,.25);border:0;color:#fff;border-radius:50%;width:24px;height:24px;font-size:13px;line-height:24px;padding:0;cursor:pointer}
+.qgrid{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(12px,1.6vw,24px);align-items:stretch}
+.qgrid .qtext{display:flex;align-items:center}
+.imgcard{background:#fff;border-radius:24px;padding:clamp(10px,1.2vw,20px);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 40px rgba(0,0,0,.35);border-bottom:8px solid var(--grey)}
+.imgcard svg{width:100%;height:auto;max-height:46vh}
+.imgsmall{background:#fff;border-radius:14px;padding:8px;margin-top:10px;display:flex;justify-content:center}
+.imgsmall svg{width:100%;max-height:17vh;height:auto}
+.secret{background:rgba(255,201,77,.13);border:2px dashed rgba(255,201,77,.6);border-radius:14px;padding:12px 14px;font-weight:700;line-height:1.75;text-align:center;color:#fff3cf}
+.secret b{color:var(--gold);font-size:1.15em}
+.rules{background:rgba(0,0,0,.2);border:1px solid var(--line);border-right:4px solid var(--sky);border-radius:14px;padding:10px 16px;line-height:1.75;text-align:right;font-size:clamp(13px,1vw,17px)}
+.rules .rt{font-weight:900;color:var(--accent);margin-bottom:2px}
+.rules b{color:#fff}
+.breakdown{font-size:15px;color:var(--muted)}
+.breakdown b{color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#06142a;border:1px solid var(--line);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+
+/* ---------- الهوية ---------- */
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;color:var(--silver)}
+.brand .plate{background:#fff;border-radius:12px;padding:5px 10px;display:inline-flex;box-shadow:0 6px 18px rgba(0,0,0,.25);border-bottom:3px solid var(--grey)}
+.brand .plate img{height:58px;width:auto;display:block}
+.brand.lg .plate{padding:10px 20px;border-radius:18px}
+.brand.lg .plate img{height:clamp(80px,7.5vw,130px)}
+.brand .bn{display:flex;flex-direction:column;line-height:1.25;text-align:right}
+.brand .bn b{font-size:1.05em;color:#fff;font-weight:900}
+.brand .bn small{font-size:.78em;color:var(--grey);font-weight:600}
+.brand .bar{width:6px;align-self:stretch;border-radius:4px;background:linear-gradient(var(--sky),var(--blue),var(--grey))}
+.brandrow{display:flex;justify-content:center}
+.brand.lg{font-size:clamp(16px,1.4vw,24px)}
+.titleline{height:4px;width:120px;margin:10px auto 0;border-radius:4px;background:linear-gradient(90deg,var(--grey),var(--sky),var(--blue))}
+
+/* ---------- HOST ---------- */
+.host{min-height:100vh;padding:clamp(16px,2.4vw,36px);display:flex;flex-direction:column;gap:clamp(12px,1.6vw,22px)}
+.lhead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px}
+.lhead > :first-child{justify-self:start}
+.hhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.host .title{font-size:clamp(28px,3.4vw,56px);font-weight:900;text-align:center}
+.lobby{display:grid;grid-template-columns:minmax(320px,0.9fr) 1.1fr;gap:clamp(16px,3vw,48px);align-items:stretch}
+.lobby .left{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+.qrbox{background:#fff;padding:18px;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.45);border-bottom:8px solid var(--brand)}
+.qrbox img,.qrbox canvas{display:block;width:min(32vw,50vh,400px)!important;height:auto!important}
+.qrfallback{color:#222;font-weight:700;width:300px;padding:30px;line-height:1.8;word-break:break-all}
+.joinurl{font-size:clamp(14px,1.2vw,20px);color:var(--muted)}
+.joinurl b{color:#fff}
+.gamecode{font-size:clamp(20px,2vw,32px);font-weight:700}
+.gamecode b{font-size:1.6em;letter-spacing:6px;color:var(--accent)}
+.lobby .right{display:flex;flex-direction:column;gap:12px;background:var(--glass);border:1px solid var(--line);border-radius:24px;padding:24px}
+.pcount{font-size:clamp(22px,2.4vw,40px);font-weight:900}
+.pcount span{color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;flex:1;overflow:auto;max-height:55vh}
+.chip{background:rgba(212,219,255,.12);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:700;font-size:clamp(15px,1.3vw,22px);animation:pop .35s ease}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{background:rgba(255,255,255,.1);border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-weight:700;font-size:clamp(14px,1.2vw,20px)}
+.pill.tag{background:rgba(111,134,240,.16);color:var(--accent)}
+.pill.exact{background:rgba(255,201,77,.15);color:var(--gold);border-color:rgba(255,201,77,.4)}
+.topbar .grow{flex:1}
+.qtext{font-size:clamp(24px,2.7vw,46px);font-weight:900;line-height:1.6;white-space:pre-line;background:linear-gradient(180deg,#ffffff,#f1f0f5);color:var(--ink);border-radius:24px;padding:clamp(16px,2vw,32px);box-shadow:0 14px 40px rgba(0,0,0,.35);border-right:10px solid var(--brand)}
+.qtext.long{font-size:clamp(18px,1.85vw,32px);line-height:1.55}
+.qtext.small{font-size:clamp(18px,1.8vw,30px)}
+.hint{text-align:center;color:var(--ice);font-weight:700;font-size:clamp(14px,1.2vw,20px)}
+.timerrow{display:flex;align-items:center;gap:16px}
+.timer{flex:none;width:clamp(70px,6vw,110px);height:clamp(70px,6vw,110px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:clamp(26px,2.6vw,46px);background:linear-gradient(135deg,var(--blue),var(--sky));box-shadow:0 0 0 6px rgba(111,134,240,.25)}
+.timer.low{background:var(--bad);box-shadow:0 0 0 6px rgba(239,68,68,.35);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}
+.tbar{flex:1;height:14px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.tbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--grey),var(--sky),var(--blue));transition:width .25s linear}
+.answerhint{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;background:var(--glass);border:1px dashed rgba(212,219,255,.4);border-radius:20px;padding:clamp(14px,1.6vw,26px);font-size:clamp(18px,1.8vw,30px);font-weight:700}
+.answerhint .unit{color:var(--accent);font-weight:900}
+.controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+.bigans{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(111,134,240,.15));border:2px solid rgba(34,197,94,.55);border-radius:22px;padding:clamp(12px,1.4vw,22px)}
+.bigans .v{font-size:clamp(34px,4vw,70px);font-weight:900}
+.bigans .r{font-size:clamp(15px,1.4vw,24px);color:var(--ice);font-weight:700}
+.bigans .s{font-size:clamp(15px,1.4vw,24px);font-weight:700;background:rgba(0,0,0,.2);padding:6px 14px;border-radius:12px}
+.anslist{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-height:22vh;overflow:auto}
+.achip{border-radius:12px;padding:6px 12px;font-weight:700;font-size:clamp(13px,1.1vw,19px);background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.45)}
+.achip.ok{background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.55)}
+.achip b{font-weight:900}
+.boxes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{border-radius:20px;padding:clamp(14px,1.6vw,24px);line-height:1.75;font-size:clamp(15px,1.25vw,22px)}
+.ex{margin-top:10px;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.18);border-right:4px solid var(--grey)}
+.ex b{color:var(--ice)}
+.box h3{font-size:1.1em;margin-bottom:6px}
+.box.sol{background:rgba(111,134,240,.1);border:1px solid rgba(111,134,240,.4)}
+.box.par{background:rgba(164,160,158,.16);border:1px solid rgba(230,227,225,.45);animation:pop .45s ease}
+.board{display:flex;flex-direction:column;gap:10px;max-width:1000px;width:100%;margin:0 auto}
+.brow{display:flex;align-items:center;gap:14px;background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:12px 18px;font-size:clamp(17px,1.6vw,28px);font-weight:700;animation:slide .4s ease both}
+.brow .rk{width:2.2em;text-align:center;font-weight:900;color:var(--accent)}
+.brow .nm{flex:1}
+.brow .sc{font-weight:900}
+.brow.top1{background:linear-gradient(90deg,rgba(111,134,240,.35),rgba(29,95,209,.12))}
+@keyframes slide{from{transform:translateX(-30px);opacity:0}to{transform:none;opacity:1}}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:clamp(10px,2vw,30px);margin-top:4px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:8px;width:clamp(140px,16vw,240px)}
+.pod .av{font-size:clamp(44px,5vw,80px)}
+.pod .pn{font-weight:900;font-size:clamp(17px,1.6vw,28px);text-align:center}
+.pod .ps{color:var(--muted);font-weight:700}
+.pod .blk{width:100%;border-radius:16px 16px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;font-size:clamp(30px,3vw,54px);font-weight:900;animation:rise .9s ease both}
+.pod.p1 .blk{height:clamp(130px,20vh,230px);background:linear-gradient(#ffe08a,#e0a400)}
+.pod.p2 .blk{height:clamp(95px,15vh,170px);background:linear-gradient(#f3f1f0,#a4a09e);color:#1e293b;animation-delay:.2s}
+.pod.p3 .blk{height:clamp(65px,10vh,120px);background:linear-gradient(#8fa0f5,#293280);animation-delay:.4s}
+@keyframes rise{from{transform:scaleY(0);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}
+.finalmsg{text-align:center;max-width:1100px;margin:0 auto}
+.finalmsg h2{font-size:clamp(26px,3vw,50px);color:var(--accent);margin-bottom:10px}
+.finalmsg p{font-size:clamp(16px,1.5vw,26px);line-height:1.9}
+.skills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:14px}
+.skill{background:rgba(212,219,255,.1);border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:700;font-size:clamp(14px,1.2vw,20px)}
+.home{max-width:620px}
+.qlist{margin-top:16px;text-align:right;max-height:40vh;overflow:auto;font-size:14px;line-height:1.9;color:var(--muted)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+
+/* ---------- PLAYER ---------- */
+.pl{max-width:560px;margin:0 auto;min-height:100vh;padding:14px 14px 20px;display:flex;flex-direction:column;gap:14px}
+.phead{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:8px 14px}
+.phead .av{font-size:28px}
+.phead .nm{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phead .sc{font-weight:900;color:var(--accent)}
+.pbody{flex:1;display:flex;flex-direction:column;gap:14px}
+.pmid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:20px 6px}
+.pfoot{text-align:center;font-size:12px;color:var(--grey);opacity:.85}
+.bigemoji{font-size:84px;line-height:1}
+.pq{white-space:pre-line;background:linear-gradient(180deg,#fff,#f1f0f5);color:var(--ink);border-radius:18px;padding:16px;font-weight:700;font-size:18px;line-height:1.75;border-right:6px solid var(--brand)}
+.pqimg{padding:0;overflow:hidden;line-height:0}
+.pqimg img{width:100%;height:auto;display:block;pointer-events:none;-webkit-user-drag:none}
+.tipbox{background:rgba(111,134,240,.12);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:14px;line-height:1.7;color:var(--ice)}
+.tipbox b{color:#fff}
+.nocopy,.qtext,.pq,.secret{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ptimer{display:flex;align-items:center;gap:10px}
+.ptimer .timer{width:56px;height:56px;font-size:22px}
+.ansbox{background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:14px}
+.ansrow{display:flex;align-items:center;gap:10px}
+.ansrow .field{margin-top:0;font-size:26px;font-weight:900;letter-spacing:1px;direction:ltr}
+.ansrow .unit{flex:none;font-weight:900;color:var(--accent);font-size:18px}
+.ansnote{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
+.avpick{font-size:64px;background:rgba(212,219,255,.1);border:1px solid var(--line);width:100px;height:100px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin:6px auto}
+.res{font-size:30px;font-weight:900}
+.res.ok{color:#86efac}.res.bad{color:#fca5a5}
+.pts{font-size:42px;font-weight:900;color:var(--accent)}
+.pbox{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:16px;padding:14px;line-height:1.8;text-align:right;width:100%}
+.pbox.par{background:rgba(164,160,158,.16);border-color:rgba(230,227,225,.45)}
+.myans{font-size:34px;font-weight:900;background:rgba(111,134,240,.14);border:1px solid rgba(111,134,240,.45);border-radius:16px;padding:10px 26px}
+
+@media (max-width:900px){
+  .lobby{grid-template-columns:1fr}
+  .qrbox img,.qrbox canvas{width:min(70vw,320px)!important}
+  .boxes{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<canvas id="confetti" class="hidden"></canvas>
+<script>/* شعار المنابر (مدمج) */ const EMBEDDED_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmoAAADYCAMAAABskT8aAAAAkFBMVEX////7+/709fnw7+/s7fPn5ubl5e/b3erb2dnT1OLMzuDNysrDxde8vtW/vLuvscq1sbClqcasqKeeob+koJ6hnJuZm72Pk7mVjo2GirOAhLFzeKZpb6FiZ5tgZp9WXZlOVZRCSYw5QYgvOIMpMoAnMH8jLX4hK30eKXwWI3oRH3kPHXgDF3YAE3cACnQAAHJbv7q4AAAcLUlEQVR42u2diZaqOBCGDZsoioig7Y4LCIr6/m832UAWWbTRdq71nzlzuxtIIHxUVSohtFogEAgEAoFAIBAIBAKBQCAQCAQCgUCgL5cITQB6i1RThUYAvYU025ahGUAvl2xhgV0DvZ4006KsgV0Dvdh7Wky2DXYN9No4zYoErIHeQ5plQ7wGenWcFgniNdCL4zQL4jXQW0kjAtZAr43TIF4DvThzmxfEa6A3eE/woaBXk2anfgbWQK+K0wzNtCFeA70hTlNbqp00bMAa6DVxmkzhsyFeA73We/IuZ3rgAHK5oGZmQt5zlplBKmAN1HicFiMI8Rqo2Tgt2dm05MJNwBrodzbNMBMy0jipqY0wbgACgUAgEAgEAoFAIBAIBPqH1R0/qO6zxU7iI3uT/MYO3Ip/XaPr6fiATtdRrWKnV7Z7/L/j8TqONk6uiQL5xiHcin9dw2DvPqD9qR5qk9M+d2RM0yTM1XkE1L4BtYdUH7XckUnUsgLUvgQ19+DXkfsgam76yDRq8cYD3ghW7StQc/fubllDi+XOfQg1d5s+MoWau10kNgJqX2LVDk5bqiFl5T+E2mEZFdtxvCxq/kKJNx7AgX4Lar4j1dlVeBS1RVSsss6hFsyFeOMBrNq3ONDXo+YAaqD3WDVADfRa1BRADQQOFAQOFASovdCBQrLj+xyopJQojZrQzu3Qlp60aoDa91m1+bpQq9U2NVowdHK7bEbQLQDVRM051h4DHZ8OWYUTiNVANVFb+7VndowCNzc/YwKxGqhmrFaJWphGzS1FDawaqNyqeSVO9DaXlqLm+QGX+xurBqh9J2qH1ajk3YJOEjXPGfT6TBvvF1YNHOh3OtBgXOtIgpq/jI5EFBhwoKBHrFoweQC1yEcK91ADBwp6E2pg1UDlDhSsGgisGghQA6sGeq0DXYFVA73cqg3xrmDVQM2g1ptOirXyIFYDNYQaGp/DYpGJHk1ZNRgt+PJYDY09t3zwvSmrBqh9vVXz9r9CDWI10COouSXzPI4rCWK15iUJX+hA92TtmEWhllMJHGjj6i8nyjdaNX+toBK1oFvQtBQnvA6+E7V6b+6BA20Mte2x5jKw/5gD/VTUkCKQ/6F/8J50FiMBrNrHoIaG67kgjZ2mbwrqlK81jqROF+MttTudasoFpdOVUgcr1Y2pdASE8P/iPkJHon+sewWCoiR+7kkPN4EgtfmlSV2lYs8uaS2l3VX+GrUXJjva2Mv0e/7R7TWL2mCzLS1xsNishJYw3mxX1c3bXW+CxOL70ni+7lde2Go7Q931LmoQabGbC/iP05qd19HMib1vZ7bedh+2qdPFlt1yabpbtMvqGi93E7LqwcYf/MMOtL05X/tdLzw0i5qwPYaLsh2m5yNGrTUOgmV1u3QDP0gYyc42OFSiNrz6YWcSBhtO8uDsXzrDs38VarZLcIon7Pf3weOoDUL/IvDDfb/svkjOibz5i7bBZfAPW7VWdzZuof6s36xRQxM/KD2VYegv8ZkPvWBewxduD/sEam28FGvl+XZ2gSMMdqeZELFzdJTeLljX7FMsfT9GrbvxH0et67shq1tZBZuycEKYB0dS18o/9f/pHiiNJwRBarZjIAwGpQX2GWp9159VmxnJ8TcJD0QWPam8J6g7areE/i0G7eDfUW+oVJz1gJUsTBOotZ0nUGvvDmGE+ajUZ+C66B2fB36vYdTKlo5pO97782pCb7wYv7ez1jlR1Ho7f5pFUiIhuNITks9f4CQQkeY1UHvuAZlewxMzQKMEapjtx1FTHD+s16ZofKB3fHJye83GasLMKV48Zk3Wi39zXg3he3eavRA1qTMYz8bDrpBDrYtRy1SszPdrQVntZ6gQtdmrUMO+7Hics1AridrytaiN/MdQq23VhNWp5FMa716zQxrMVuutl7vjmeRbbyIUJS0G/MKE4aQfNwAS2kMU3b7DKcRfwToFm7FUjVr36p+7/SDYdWjxvV4CNaE9aD+MGhKUfjtKWgzaRTux65AWgdsvRw0X0i2vrz1QUqiRq0C/Rk0Vn0CtakGP31s1Ua15H/rO+bzbbd1y1AbH006KqWN3XSGpLjTYBFEYhZe6DzcDXkx/5x9463ZP69lkNJ4uvSCMG+Eeamx8Tlm7G/IRBnLVaLa7zG6oddY0cK5EjeXs8Kl2yKl1Vj6/hYKzj4eqkNJNXEerjyN/eh2dTUDTL4WoKct9OEalqZk9ibluqOGrCJPNq3TxKga9jvQYaqopPu5AX4dabNVEsx5rffe0m3Q7w10VaocNP4nBOqC3eew4xOwMD77DUUPtzjjcc1vWPx22/H60+8wqS8ONf54UoyYNxn22fwdngOlBaB6G0wRqO9+tgZqCc3aI3XPCBM6N8Byf4B8u0YH99ZacKhqtN2TjIODXgXCCZFiK2jo4lKO283fdFGqLo39zCsJwuQvPgbtZCI+gptrms1YtuBTrOv1tskM0rTqsSU6w66O7fiwlHL1HqE0vV3q3liG1ZniLc/NJGI2two/wtrf70ZvNZ7gVB7cmuoMazl7lHNM4PCZQEzZeHdQ6x9Oa1D24XggTwtrnqKGlH6M2udBcl7AICRetHl43hV2HtD2SnwpRE5Z+OWq4v5pGrTXxb6jhuDjczOfbg79/xKqp1tOo+fNoPZh7av/agZpWHdaGPrvTVah1nBtqR3a3FixX1N0mUWt1Qr4MYQc7JBQn6gNvHQRTYhCijGoeNWF6J+k7CE4J1BALpKpQ63oBQy2kng7NI6vWmgY31I4HYtWEOaMIp86i6xiejrMS1NCsAjXcX82gNjrEqAnT4EB+HhwOzgOoqZZlPetAX7zCN0GtBmvzgN2zKtSkZVCAGn6Ek6hJOFGKeNoyQk1yrqs2vrVXpRQ1ZXVnyk9vl3SgrdnxCdRw1RFqwzRqrRtq7XV8HcIiuHRLugXjCtTwk5VBrXdDrXcIFiyWDRb1USOkWc9atXegZqs1UBvUQU0pRm2TRm0dbAV+RITa5LLpkqjw2i9Hbf0hqGFLfVyiYtQmD6PWjVFD4+A04NHCsjZqGiHNfgtqynOoWZV9g7nvDR9EbVKBmu8radQk50hydv19JWrn8Weg1poEXr9fgppfevPuoOZFqOExqHOXo7ZKojYuQY3atE9zoPs0apWsTYI4VitN4SpOsBGyqNFbU4jaOorV8AAmueFZ1MIsatLilB+f7O2fQK3jctTObBnYaRDtPkqiRp8ydA81nPBYjBPv8aZHCya+V4FaNlbrx1ZNWAbnTs6qlY8WcNI+zIFmUbMr4rWO6wVj/N2Ewe7gdEqmow923q5P817K6hCO8Xhpe+NthwLOq+18dnpsR2nlH+jE9v7O2/fpn3CTzyQ8or+/9Mm4c5vtOTkFs3TXF439YCSk6xWmdM5DBjVhdsChdfHc+bHvbdr4h3kQEIeAx/qCKdmdPAjBMj5Rj7zQgRHbD6nR5TeIljDw9zv3sGrzEvupvg+2anOlVdxYvS0dscXXfenxq/APa1oW9s2HsMdQO+wkfgAmmXrV+6hFpH04apb1U8oamoae76wd13fd1Xg8KVhMdbLxXc+h2xee6x8W49EKG/H9dDRxPDqIifrRnp43of8eXNeZ0BJx3382Hs/xqeK/blkd060XDDKeG3dad/N0xbOde+nlUGsNXG87K1z6dbJzvaMzGeGD/WA1Hi3IO0R09zm5STN2HfgNtmCON7ournU0WeMpJoiOjOP9RpO9iz8ZvV/wAslGIYGau58Xrzw7Wbs+mR+FZoG3mfCr2HsLWi2+Ryxp2t+73pIfMfc8v12Emma9FTXledQq+qE4dgjP53C7Dg944edjcF/4IwyBfzgGpyDwPX+5uZzwr4f17hIEh8Bts0ArXjWaH0H+C07HAF+si/9CEjzko+O8yMOR5uRTQWI/fwJe6Ah51PAELy8olnvcrHCSNMAh2+aCi/SOAd2d/oP/O5JqDsHKuYT4OgJyHeQKO+zZo2eHF8LGu/rH6PKviYzfxI+v4n5jBec+izMDXgAti9R79D3PIzGusvCDgx9drneZMp+eR0217Txq7ud1C2rEa6gzGo37kjDZlaSUL+FquAlZdnk/ltqz0+XsDoXeKryEDotyz9f0EefVyAlLSjyyean4uESQ2FtnE9uHOUvdXndtmtI67npsPKAsAx4uO2i4vVyPM0WZHa9nfzw/si27yWzPTvTqTyRl6l8vuzHqrU7X84ZeR+cSXQfe1Y0KPDnJvjFGzT+XVb/pR5fDM/L+fLJlR4TbrXfYzGbb02ayiao671gkN7te+0XesxGrJutaVrramAOt0w9lwWy7TAiPFbKf6LkobTq5H+F/hYKjb0fclRJ9YKutpIb1M7vxK8f10D7G7BTNMSwtGyVKZqcqxcVJ7dR1tIXUdQidRM3xRSmpLtPE3w1LG0vIXo5yK0vobYJjGB7wkyZkr1JKHJr1no2gptl5aQ1atTr5tf+JhOVp+eKXiBOfkivyA7PyObWtyncOlsvZoNY82aRNs2zj1w5Us62ssqg9btUEI1XqP8IaHjgfv7aGrrNZVkwyU9bH+a/m9glSzQUe1NQ9NOXW761aJWpPzFeTraZY6y2nOKex/oD3xBH2ny82apu50q6Y+T7yT+3S9lpPmpllmvKeti233oHaM2t2iEnW7OdZU/zjddDZnYLeX5MmTcN9+7Usd/ajijdFhdGpYq6cd2xm+QYtbSzkpyZ8vwW1lmxaTcRrCp7u1Meea/fXqPUdb9Z5bRUdx3E22zIf3V0dF+VTv5VdvVfsnvSeH2PVUu8WyEYTdg37zpkgjDbDv16TYDjrvfoUeJ+wjPd5vyqgHzpTqQHSUjwkSfuQWC39GotsNhGvIRLEIunPF/VAn7D+Ro2TQE2s6pYiLWXTPsWBZt6YaoY10NuB1tI8yM+/MfUu1NKs2cDa/0Sp0CdBw2cmO+52mC0Et/F/yFrGRHxcsuNeulmujhF0XZd/3VK4FE18343R8Emnq0Piix4qJAq/O7zmeZWFPi+N1Z5dHqakG5O4Ki1xIWSUTM1sRcW/Fki3iyrLSJTJkK/6S7hxdXYKNdH4eSBYkG+Dz1XXhgs2fxGFyOaPIT/BWjr0+USrlknN3LczCNtquRg1/Sd5HNJrOWGtHmqybvExX0tDzaAm0n/VH9s2apeo4b3tHyJbrL6weCjyyRPVn7Nr2iOoOdGkgQ5hoimr5i94sUqPLiwzLIrTCkgjl5SIO7OoYRCTv5PhLrEh1ESSDtdVWZY18zf3L4GaqBoan+Rl6/X9L97b1Ik0oTKvigt+3oVqyZkUT/vQGovJO5HICjBNWbV0sUkHqtXxntnWy6GGQTRSbdUUaogAwo2ZaOitBlDD4yM/tOUEzTTkVwCANPM3oayom7rY+i1rNT6REa0JQz/N0pRVSxebQE2zi5OA2Tt+86BZ1ESM2u0iReLw5GZiNT15g0W1CdTEnweMxpO25p0S70+ZePTDP01ZtbRuqKXitJIbL1tmsqWzqBH3ejNrdGpdyuih1C8ojRpCdxYNjAomhN8hP3tMqpCCXH2EmvBj3x3qzZ4lStdyF7VUtfydmvKzzZx69koQatWoA5X0DepN+D54bkZhI1YtW6p7ujs1ssTE6JaKaYoDuSxqKg3c5bjQ6K6IsixiW4TDG75NUEnKgfclCWqiqMVbZbq3lvQ9xr37K5MyNFmMDpJbiULoVo2s/IRoeewsZBShhmTSG9DIXwS+A/2HHsavT1Z1LrkANRQfo2aPMcS4ZloxkskVo9SpR6Wo0blGJ4m3sx+FO3UgejSvoyi/Vu+V49HByypswqqd3Vyxd1ArI020DJTEK4uaZpNeoh5Ff/Ev+KR12aCdR5W1CZ1TZbNUAL73hmqQP9Cek4h/VImnVltlrhiR7oFKSqZtali2jrMDduSMZdyHwI8F7sGR8jQejpJtDDWZd2fx3SKTWjTSp8EtKVs/cbdRZRXgE1GLUMOHmqpKC2KngU9KV8mzo2pxwbggXLGWmDBNTkw1+OWTqATvblm0F4wzToaAt5vsMDVVB+snp+ootGt1UMPLOOV0W1JOVPOSalm1ziBfrJJDrTRsUvHLe2LCR+ZRk/UolpNNg4RuOk8QWIau0UBPpElbET/lJr+nOoUOiTojkRylpuM32utDuZiJZAJUXiQG2TRZFaZASUOEWi3RaebdD4aaqNFUhKYx6shpEntt6ZrBL1ClbUGY17MO1CCtrqmsbNPUtMjqkipIteyhiWrGJVlkryiS1Wh9Ik+AiSx/pMbXY5ITMlgXLFGHyTvKuDENOnH6TsgoPvZuwS9UatXKIkqzukdAcxnk/I2bhcmgJug2ovcN0RZRxQgmLWqllB8k7lZNhPx8d/qPZRiJM9HtXOZL5TNNCQpGwsXq7JR0xjh2qgWo4SOjWC2BGv0DLupHpPvRe2/ZqQHs+OWOH5wzpBjIFBdy6siMiTOEFGrx78TM8gbU2UXxZ4Y+YZQvwzQN0snm7VNSh1jSD60Tq/0laoX5NB6cazzfod1FTTRMhLhZE00DCTqP66J0hpjKyvHGvfVA2aEi73nIYhlqBrUfPKMi099pulhmB+PkcRw9FaAW90CTVo33Qcir12YxajSvZugoWzaybsZNTKOmRY+FSEuIHkCZEqQz40bqU5nlR3IKNf1Wh8gfUM2+e7PieO0tVk15GrVy0vBNklvx03UPNdNkbYWbTMMbUARR1Cy8OXlwyw1QKwKSFyeauUbUcw4UxW6ckx+hJ1ocNeyyWSjzCGpG9LtKSyxCTUcCEgShVYKakUbNiqNSkT4VsijyyyW1aaIoyqxZEw9yArUo1Zyvo9CufbYDrRhhJ2tLEhlx8iyHmsFwwi2Jg1uKmqXeQw2pOo6sbg7UEG8RdxzhZVDLGNhoJ24yMqgxN0fj7mdRU9lJa5mMf6ZbkMKgxbw54nHUfdSIB8Shm8k76NSMkV9tWp96C0/uo9a6RQxaWX7tox1oVSI1+Qoqs00Z1FTLiAYUtMjI30WN4oGQXRc1NZU4roOaaPDzfB418maILqpZU1+KGunFqrh/QzslBajRAAFHY/g/Az8LKvuNiAwOqLcR2gLUBPyIanEdhXbtk61ahfckd4+1CG5OTmUWNXb3LTvKF5BxSy2PmspusngPNfUeaqKZzatVoYZ7mKbNwp6nUcPZBiw9MzmlFDWSgsFBPV9voNiq2SjOUyc8Zov1QCtQY+dl6GrpGJX9wbFaFWn47uInkipu7Qxq2u2vvHHSYXIUApusOcV7sZp8D7W8BxVvqDHLmUWN5GiZ/34aNTwGKefHI8pRk0nPCGW25mO1RJJQtVLZlBqoybopIFQ1V7KWAy37gnar9Pva96zaqFX9YW6S2K8ccdbjFbHIvaBRegY1nf1C7ja70KgZ06iRwNbk+6lxx5N10EzxLmpiar2IlkBNp5kcrM+hxicxybdbpT+GGjkdPJogq2J91MgFktknsliCWjrlk+kFVaNGs3ZxHUUDiPWsWn+W07x/e98rv3FQYtW89axY8258uZUD3nKiQQw77nAnUEM6f1i1qClpP13IoWaytKtmp/NqvE3voUby6/HMDvzQ3sLnKFeQQU3VeJdYpHuY8i0/VRs1MwpMjVwPVKDWPY+BHE+p04t7oIIdz3gRU+wisQ5q6ToK/VS95WFy64b58VfF0TjMbbyUfSJjX7K0mB+tmnQ7sbJOwc3MazzVkEYNjwCJ0TMlRuEd68X9pBwobVw8W8yKsq6GbmlRb/8+ai06roVHAUVRpWcSZfE1nnHL9UBVerPIgJNGZ1PqpMebRE2wi1BjeTU+omvb6dzLrXOUjAOjboEWH2MUokZxMvCl4LFMRBPfZFgLX5jB+r1xD9S+70DpGfzYdmrCVn4iad3lYQpndoz8yq+xpKxamdwwQq16riH2sVpyggd9B0xLTcIjWVtu3owYPhozkAE+kf9ORyVpr4uML5okB4bbWbdI31+Pd7o3N9Kg4zsECJXPlcRDgRZ/tvEP1KeLbNyRjI1qGpuuKxKmf/BIpsnGQHFVUWhoaXyokqJmWUY0fYWiZtIFxoxMQEozEyRXgQfAyPgkj0otg6Jm0qngJh1wSI6BqnwUlraDSi7WNPnQjKjT30x6tiquPEKNHcaviNbBcGbnZWYnrmfaC/12EtGIrLTYNGpC9Qw8JCffqSApR/JA4kxkIucURw/i7QeRHMa8TSv+gc/AQGS2AmsUQcVjpKrAd7ofhhArgPu/0VyOaHoESpZMTkIWo9kP0RwTNqcEyaxyXD6HlxyPDSSvMCoC7yezmy5GpllLXXqkxLkKrGzt1i3+kW9bZZE13q0dVDLaEEWBKDHRA4lx45HzEJJ1iFEdKDLGcgNfziNrr0brUeZRS28s/MbU5lTiPN0EaqB7Zjwx/FZzLqYc76nTYdSXnFeiDltsADV3O4+0dbOo4W9bxRu9YtSkybxYC1wsoFaOmh7dUlOuu0gLxwCPFxgvOi85WQdq4tOzq/hDaek3pghq/lKq80HtVvkScwdArTRiMKKZb2btdZlwn4QNYqmZwY1mrRqLTlW71pt/z7+cx1BTylBTALUmpFo/Bs6RqeYDK4CRAVMcYam17WDrqZcbcJQnazVXLX4parWt2h5QK5NAO5/mQ2/eixqbXfzKt/Ufq+P5t9ubRA2sWuVKBrf+YN1Dnjjmpef1GVYNUPsCfUasBg70K1BzIVYDfZhVQ+BAQa9E7eB0+fIw3fWzDhS1O9mPzHQUQA0caGa0wN1x7d39k1ZNceJCIvnp9dUANbBqhLXoFfT9/kmrhr9mmn2d/QioAWqPzOyobdVyBQWAGqCWWh7Gzc32ec6qMfPIy3ABNYjVsqjhbwKn5Z1/YdVcVoZLWAPUwKol3y1Qenm1n7VqwazLiyCfIgfUALXaL+cR1A6r+lbt9nLeOATUwIE+iNojDrR0MXlADazae1CDgSlA7XeoKYAa6D0OFFADfZoDhVgNUHuJVRuDVQPUKGr+pCVUC+d376HGN06Oeas25hvBgUKsxlFznfmihhyc88+g5kVHzjdefnmYeCNN6IIDBatGXlmvIzLWlEHtdiTZmFseJrkRUAPU9o8oi1pKpWt2AGrgQJtDzbtZtTWgBspYNed8fETndYSa5IS5jTGHyia38bIA1L4btfHsMY3jd1wm+Y1DIV4e5s5GBKh9tQP9AwFq32nV/gg1yKsBaoAaCBwoCKwaWDUQoAYC1AA1iNXegZoPsdq3WDW8Akznz9Tu4wFSQO1LUNu73l8KvlvwPQ6UrG3wh9oDat9j1f5cgNo3oHbyPkFnQO2f12C7+QTtenAr/nVJnc+QBLcCBAKBQCAQCAQCgUAg0PslyimlN6LUNlWG5gI9L9mwrZtMLUWalthk2YYIzQX6DWtmkjVLTX1eOUUaGDXQ7yTYKda0AtJMsGmgX4drSR9q21rkPW3wnqBXxmucNQQ2DfTyvgFlLdMjgDgN1FC8ZmVYA+8Jeke8hpMeQBrodaylPCbEaaB35dcgTgO9mTXwnqAX+NA7rAFpoDf0DYA00Jvya0Aa6F3xGvQIQO+J1yDLAXpPvAbeE/SeeA1IA70nXgPSQO+J14A00JviNQNBM4De4UN1sGkgEAgEAoFAIBAIBAKBQCAQCAQCgd6g/wDldk/3uPsw+gAAAABJRU5ErkJggg==";</script>
+<script>
+/* =====================================================================
+   ⚙️ الإعدادات — عدّل هذا الجزء فقط
+   ===================================================================== */
+
+// 1) الصق هنا إعدادات Firebase (من Project settings ← Your apps ← Config)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC2_jgvD2EqldExArSzTBMywgXtuC0HKug",
+  authDomain: "almnabr-game.firebaseapp.com",
+  databaseURL: "https://almnabr-game-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "almnabr-game",
+  storageBucket: "almnabr-game.firebasestorage.app",
+  messagingSenderId: "789564328202",
+  appId: "1:789564328202:web:c4188b2b279f97be1052f3"
+};
+
+// 2) كلمة مرور شاشة الهوست
+const HOST_PASSWORD = "1234";
+
+// 3) الهوية: شعار المنابر مدمج داخل الملف. اترك logo فاضي لاستخدامه، أو اكتب اسم صورة ثانية (مثلاً "logo.png")
+const BRAND = {
+  name: "المنابر",
+  full: "للاستشارات الهندسية",
+  logo: ""
+};
+const GAME_TITLE = "تحدي الذكاء الاصطناعي 🤖";
+
+// النقاط: الإجابة الصحيحة (داخل الهامش) = POINTS_BASE + بونص سرعة يوصل لـ POINTS_SPEED
+// البونص كامل لو جاوبت أول لحظة، وينقص بالتدريج لين يصير صفر لما يخلص الوقت. الغلط أو عدم الإجابة = صفر
+const POINTS_BASE = 500;
+const POINTS_SPEED = 500;
+const FINAL_MESSAGE = {
+  title: "🏆 والحين… جاء وقت المسابقة الحقيقية!",
+  body: "في نص ساعة وبجوالاتكم بس: حطيتوا فرضيات، وزّعتوا موارد، طلعتوا كميات، جدولتوا دوري، وجمّعتوا معلومات من بعض… والذكاء الاصطناعي حسب لكم الباقي في ثواني. تخيّلوا وش تقدرون تسوون لو بنيتوا أدوات حقيقية لشغلنا…"
+};
+
+// 4) الأسئلة — الإجابة رقم يكتبه اللاعب:
+//    answer = الإجابة الصحيحة ، unit = الوحدة اللي تظهر جنب خانة الإجابة
+//    min و max = حدود الهامش المقبول. إذا حذفتهم يصير السؤال «دقيق» ولازم الرقم بالضبط
+//    time = الوقت بالثواني
+//    steps = خطوات الحل المنطقي اللي تظهر بعد الكشف
+//    pieces = (اختياري) معلومات تتوزع على جوالات اللاعبين، كل لاعب ياخذ وحدة ← لازم يتعاونون
+//    image = (اختياري) رسمة SVG تظهر على الشاشة الكبيرة بس ← لازم يصورونها
+//    answer ممكن تكون دالة حسب عدد اللاعبين: answer: n => Math.ceil(n * 4 / 7)
+const QUESTIONS = [
+  {
+    tag: "الصدمة ⏱️", skill: "الفرضية الصح = جواب صح", time: 120,
+    text: "واحد من الشباب تحدّى: «أنا بعدّ من 1 لين مليون بصوت عالي» 🗣️ بدون نوم ولا أكل ولا توقف. كم ساعة تقريباً يحتاج؟",
+    answer: 1000, min: 800, max: 1200, unit: "ساعة",
+    steps: [
+      "الفكرة: الوقت = عدد الأرقام × متوسط وقت نطق الرقم الواحد.",
+      "أغلب الأرقام (900 ألف منها) من 6 خانات، مثل «ثلاثمية وسبعة وأربعين ألف وخمسمية وتسعة عشر».",
+      "جرّب تنطق رقم بنفسك: ياخذ 3 – 4 ثواني ← المتوسط ≈ 3.5 ثانية.",
+      "مليون × 3.5 = 3.5 مليون ثانية ÷ 3,600 ≈ 970 ساعة ≈ 40 يوم متواصل!",
+      "اللي افترض «ثانية لكل رقم» طلع له 278 ساعة… الفرضية هي اللي تفرق."
+    ],
+    parallel: "الذكاء الاصطناعي يحسب أي شي في ثواني، وقوته الحقيقية تطلع لما تعطيه الفرضية الصح. أنت تحدد «3.5 ثانية للرقم» من خبرتك، وهو يكمّل الحسبة ويراجعها ويعطيك سيناريوهات ثانية.",
+    example: "تبي تقدّر ساعات تصميم مشروع؟ تعطيه عدد المخططات ومعدل الساعات لكل مخطط من خبرتك، ويطلع لك الإجمالي وتوزيعه على الأسابيع والمهندسين في دقيقة."
+  },
+  {
+    tag: "حالة 🌯", skill: "توزيع الموارد والقيود", time: 240,
+    text: "🌯 بتفتح مطعم شاورما في حي سكني بالرياض، ورأس مالك 200 ألف ريال: إيجار سنة مقدّم 60 ألف، والديكور والتجهيز 50 ألف، ولازم تخلي 30 ألف احتياطي تشغيل.\nكل مكينة شاورما مع ملحقاتها بـ30 ألف، وتشوي بالكثير 45 كجم دجاج ني باليوم.\nالحي فيه 15,000 ساكن، ونتوقع 5% منهم يطلبون كل يوم، كل طلب ساندويتشين، والساندويتش فيه 80 جرام دجاج مشوي، والدجاج يفقد 25% من وزنه بالشوي.\nكم كيلو دجاج ني تطلب للمطعم يومياً؟",
+    answer: 90, min: 77, max: 103, unit: "كجم",
+    steps: [
+      "الفلوس المتاحة للمكاين: 200 − 60 − 50 − 30 = 60 ألف ← مكينتين بس (30 ألف للوحدة).",
+      "الطاقة القصوى للمطعم: 2 × 45 = 90 كجم ني باليوم.",
+      "الطلب: 15,000 × 5% = 750 طلب × 2 = 1,500 ساندويتش × 80 جرام = 120 كجم مشوي.",
+      "المشوي = 75% من الني ← الني المطلوب للطلب = 120 ÷ 0.75 = 160 كجم.",
+      "الطلب (160) أكبر من الطاقة (90) ← المطعم محكوم بالمكاين: تطلب 90 كجم بس، والفرق فرصة توسّع لاحقاً."
+    ],
+    parallel: "هذا توزيع موارد: الميزانية تحدد المعدات، والمعدات تحدد الإنتاج، والطلب يحدد إذا تحتاج توسع. الذكاء الاصطناعي يبني لك هالسلسلة كلها، وتقدر تغيّر أي فرضية وتشوف النتيجة فوراً.",
+    example: "في مشروع تصميم: الميزانية تحدد كم مهندس، وعدد المهندسين يحدد كم مخطط يطلع بالأسبوع، وموعد التسليم يحدد إذا تحتاج دعم. تعطي الذكاء الاصطناعي الأرقام، ويطلع لك وين الاختناق وكم تحتاج تضيف."
+  },
+  {
+    tag: "حالة 🏕️", skill: "قوائم شاملة وكميات بالاحتياط", time: 180,
+    text: "🏕️ كشتة بر يومين في النفود وقت الصيف، 30 شخص.\nكل شخص يشرب 4 لتر باليوم، والطبخ والشاي والقهوة 20 لتر للمجموعة باليوم، والوضوء 1.5 لتر للشخص في كل صلاة، والغسيل (صحون وأيادي) 2 لتر للشخص باليوم.\nوتبي احتياط 25% للطوارئ. الموية في جوالين، كل جالون 20 لتر.\nكم جالون تاخذ معك؟",
+    answer: 54, min: 46, max: 62, unit: "جالون",
+    steps: [
+      "الشرب: 30 × 4 = 120 لتر باليوم.",
+      "الطبخ والشاي والقهوة: 20 لتر باليوم.",
+      "الوضوء: 30 × 5 صلوات × 1.5 = 225 لتر باليوم (أكبر بند… وأغلب الناس تنساه!).",
+      "الغسيل: 30 × 2 = 60 لتر ← المجموع 425 لتر باليوم × يومين = 850 لتر.",
+      "مع الاحتياط: 850 × 1.25 = 1,062.5 لتر ÷ 20 = 53.1 ← نقرّب لفوق = 54 جالون."
+    ],
+    parallel: "الذكاء الاصطناعي ممتاز في القوائم الشاملة: يذكّرك بالبنود اللي ممكن تنساها (مثل الوضوء هنا)، ويحسب الكميات ويضيف الاحتياط في ثواني.",
+    example: "جدول كميات لنظام إطفاء: تعطيه المخطط والمواصفات، ويطلع لك كل البنود (مواسير، وصلات، صمامات، دعامات) مع نسبة الهدر. وأنت تراجع وتعتمد."
+  },
+  {
+    tag: "حالة ⚽", skill: "الجدولة بالقيود", time: 180,
+    text: "⚽ دوري الشركة: 16 فريق في 4 مجموعات، وكل مجموعة 4 فرق يلعبون ضد بعض مرة وحدة. يتأهل الأول والثاني من كل مجموعة لربع النهائي، وبعده نصف النهائي، وبعده مباراة المركز الثالث والنهائي.\nعندنا ملعبين، وكل ملعب يتحمل 3 مباريات في الليلة.\nالقيود: الفريق ما يلعب أكثر من مباراة في نفس الليلة، وكل دور ما يبدأ إلا بعد ما يخلص الدور اللي قبله.\nكم ليلة بالأقل نحتاج عشان يخلص الدوري؟",
+    answer: 7, unit: "ليالي",
+    steps: [
+      "المجموعات: كل مجموعة 6 مباريات × 4 مجموعات = 24 مباراة.",
+      "الطاقة: ملعبين × 3 = 6 مباريات بالليلة ← 24 ÷ 6 = 4 ليالي، وكل فريق يلعب مرة وحدة بالليلة، فالجدول يمشي.",
+      "ربع النهائي: 4 مباريات في ليلة لحالها، لأن الدور ما يبدأ إلا بعد ما تخلص المجموعات.",
+      "نصف النهائي: ليلة، وبعده النهائي والمركز الثالث: ليلة (الفرق نفسها لعبت الليلة اللي قبل).",
+      "المجموع: 4 + 1 + 1 + 1 = 7 ليالي. واللي قسم 32 مباراة على 6 طلع له 6 ليالي… ونسي القيود!"
+    ],
+    parallel: "هذي جدولة مشروع بقيود: موارد محدودة (الملاعب) وتسلسل إلزامي (الأدوار). الذكاء الاصطناعي يبني لك جدول زمني كامل في ثواني ويلتزم بالقيود اللي تعطيه إياها.",
+    example: "مراحل التصميم: مفهومي ← تخطيطي ← تفصيلي ← رفع على بلدي، وكل مرحلة لها مراجعة. تعطيه المراحل وعدد المهندسين، ويطلع لك جدول زمني بالتسليمات وتواريخها."
+  },
+  {
+    tag: "الختام 📦", skill: "التعاون وجمع المعطيات", time: 150,
+    text: "📦 نبي نعبّي مخزن الاستراحة كراتين موية، ومقاس الكرتون 40 × 30 × 25 سم. أبعاد المخزن موزعة على جوالاتكم: كل واحد عنده معلومة وحدة بس! كم كرتون بالكثير يتسع المخزن؟",
+    pieces: ["طول المخزن 6 م", "عرض المخزن 4 م", "ارتفاع المخزن 2.5 م"],
+    answer: 2000, min: 1700, max: 2300, unit: "كرتون",
+    steps: [
+      "أول خطوة مو حسبة… اجمع المعطيات من زملائك: الطول 6 م، العرض 4 م، الارتفاع 2.5 م.",
+      "حجم المخزن: 6 × 4 × 2.5 = 60 م³.",
+      "حجم الكرتون: 0.4 × 0.3 × 0.25 = 0.03 م³ ← 60 ÷ 0.03 = 2,000 كرتون.",
+      "تأكيد بالرص الفعلي: (6 ÷ 0.3) × (4 ÷ 0.4) × (2.5 ÷ 0.25) = 20 × 10 × 10 = 2,000 بالضبط."
+    ],
+    parallel: "مو دايماً الذكاء الاصطناعي بيخدمك لحاله: حسب لكم الجواب في ثانية، بس بعد ما جمعتوا المعلومات من بعض. وفي الشغل نفس الشي: قوته الحقيقية تطلع لما الفريق يتعاون ويعطيه الصورة كاملة.",
+    example: "عشان تحسب حمل التكييف لمكتب، تحتاج من المعماري المساحات والواجهات، ومن الكهربائي الإنارة والأجهزة، ومن المالك عدد الموظفين. لما تجمعها كلها، الذكاء الاصطناعي يطلع لك الحمل في دقيقة."
+  }
+];
+/* ===================================================================== */
+
+const app = document.getElementById('app');
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const params = new URLSearchParams(location.search);
+let IS_HOST = params.has('host');
+const CONFIGURED = !!(FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith('PASTE') && FIREBASE_CONFIG.databaseURL);
+const LOCAL = params.has('local') || !CONFIGURED;
+const AVATARS = ['🦁','🐪','🦅','🐺','🦊','🐢','🐬','🦄','🐝','🦉','🐸','🐼','🐯','🦖','🐙','🦒','🐧','🦜','🐞','🐳','🦓','🐊','🦩','🐿️'];
+const BASE_URL = location.href.split(/[?#]/)[0];
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} },
+  sget(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } },
+  sset(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} },
+  // هوية اللاعب: في وضع التجربة لكل تبويب هويته، وفي التشغيل الحقيقي تبقى حتى لو أغلق الجوال الصفحة
+  pget(k){ try{ return JSON.parse((LOCAL ? sessionStorage : localStorage).getItem(k)); }catch(e){ return null; } },
+  pset(k,v){ try{ (LOCAL ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); }catch(e){} },
+  pdel(k){ try{ (LOCAL ? sessionStorage : localStorage).removeItem(k); }catch(e){} }
+};
+
+const isExact = q => q.min == null && q.max == null;
+const isDynamic = q => typeof q.answer === 'function';
+// الإجابة والمدى المقبول (n = عدد اللاعبين، للأسئلة اللي تعتمد عليه)
+function rangeOf(q, n){
+  const a = isDynamic(q) ? q.answer(n) : q.answer;
+  if(isExact(q)) return { answer:a, min:a, max:a, exact:true };
+  return { answer:a, min: q.min ?? a, max: q.max ?? a, exact:false };
+}
+const textOf = (x, n) => typeof x === 'function' ? x(n) : (x || '');
+const fmt = n => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+// يقبل الأرقام العربية والإنجليزية والفواصل
+function parseNum(s){
+  if(s == null) return null;
+  s = String(s)
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/٫/g, '.').replace(/[٬,،\s]/g, '');
+  const m = s.match(/-?\d+(\.\d+)?/);
+  return m ? parseFloat(m[0]) : null;
+}
+const inRange = (v, lo, hi) => v != null && v >= lo - 1e-9 && v <= hi + 1e-9;
+
+function brandHTML(cls=''){
+  const src = BRAND.logo || (typeof EMBEDDED_LOGO !== 'undefined' ? EMBEDDED_LOGO : '');
+  if(src) return `<span class="brand ${cls}"><span class="plate"><img src="${esc(src)}" alt="${esc(BRAND.name + ' ' + BRAND.full)}"></span></span>`;
+  return `<span class="brand ${cls}"><span class="bar"></span><span class="bn"><b>${esc(BRAND.name)}</b><small>${esc(BRAND.full)}</small></span></span>`;
+}
+function rulesHTML(){
+  return `<div class="rules"><div class="rt">📋 كيف تنحسب النقاط؟</div>
+    <div>✅ إجابتك داخل الهامش = <b>${POINTS_BASE}</b> نقطة + <b>بونص سرعة</b> لين <b>${POINTS_SPEED}</b></div>
+    <div>⚡ البونص كامل لو جاوبت بدري، وينقص كل ما مر الوقت</div>
+    <div>🧮 مثال: جاوبت صح والوقت باقي نصه ← <b>${POINTS_BASE + Math.round(POINTS_SPEED/2)}</b> نقطة</div>
+    <div>❌ برّا الهامش أو ما جاوبت = 0</div>
+    <div>🎯 الأسئلة «الدقيقة» لازم الرقم بالضبط</div>
+    <div>🔒 إجابة وحدة بس لكل سؤال — تأكد قبل لا ترسل</div></div>`;
+}
+function toast(msg){
+  const t = document.createElement('div'); t.className='toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 2400);
+}
+
+/* ------------------------- طبقة البيانات ------------------------- */
+function makeFirebaseDB(){
+  if(!window.firebase) throw new Error('firebase-not-loaded');
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.database();
+  let offset = 0;
+  db.ref('.info/serverTimeOffset').on('value', s => offset = s.val() || 0);
+  return {
+    on(path, cb){ const r = db.ref(path); const h = s => cb(s.val()); r.on('value', h); return () => r.off('value', h); },
+    get: path => db.ref(path).get().then(s => s.val()),
+    set: (path, v) => db.ref(path).set(v),
+    update: (path, o) => db.ref(path).update(o),
+    remove: path => db.ref(path).remove(),
+    now: () => Date.now() + offset,
+    ts: () => firebase.database.ServerValue.TIMESTAMP
+  };
+}
+// وضع تجربة: يشتغل بين تبويبات نفس المتصفح فقط (بدون Firebase)
+function makeLocalDB(){
+  const KEY = 'aiq_local_db';
+  const ch = ('BroadcastChannel' in window) ? new BroadcastChannel('aiq_local') : null;
+  const load = () => { try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } };
+  const parts = p => p.split('/').filter(Boolean);
+  const getAt = (d,p) => parts(p).reduce((o,k) => (o == null ? undefined : o[k]), d);
+  const setAt = (d,p,v) => {
+    const ks = parts(p); let o = d;
+    for(let i=0;i<ks.length-1;i++){ if(typeof o[ks[i]] !== 'object' || o[ks[i]] === null) o[ks[i]] = {}; o = o[ks[i]]; }
+    const last = ks[ks.length-1];
+    if(v === null || v === undefined) delete o[last]; else o[last] = JSON.parse(JSON.stringify(v));
+  };
+  const subs = new Set();
+  function fire(){
+    const d = load();
+    subs.forEach(s => { const v = getAt(d, s.path); const j = JSON.stringify(v ?? null); if(j !== s.last){ s.last = j; s.cb(v ?? null); } });
+  }
+  const save = d => { localStorage.setItem(KEY, JSON.stringify(d)); fire(); if(ch) ch.postMessage(1); };
+  if(ch) ch.onmessage = fire;
+  window.addEventListener('storage', e => { if(e.key === KEY) fire(); });
+  return {
+    on(path, cb){ const s = {path, cb, last: undefined}; subs.add(s); setTimeout(fire, 0); return () => subs.delete(s); },
+    get: async path => getAt(load(), path) ?? null,
+    set: async (path, v) => { const d = load(); setAt(d, path, v); save(d); },
+    update: async (path, o) => { const d = load(); for(const k in o) setAt(d, path + '/' + k, o[k]); save(d); },
+    remove: async path => { const d = load(); setAt(d, path, null); save(d); },
+    now: () => Date.now(),
+    ts: () => Date.now()
+  };
+}
+
+let DB = null;
+try { DB = LOCAL ? makeLocalDB() : makeFirebaseDB(); }
+catch(e){
+  app.innerHTML = `<div class="center"><div class="card narrow"><div class="logo">📡</div><h2>ما قدرنا نتصل</h2><p class="muted" style="margin-top:10px;line-height:1.8">تأكد إن الجوال متصل بالإنترنت وحدّث الصفحة.</p><button class="btn big primary" onclick="location.reload()">تحديث</button></div></div>`;
+}
+
+const localBanner = () => LOCAL ? `<div class="banner">🧪 <b>وضع التجربة</b>: اللعبة الحين تشتغل بين تبويبات نفس المتصفح فقط. عشان تشتغل على جوالات الحاضرين، الصق إعدادات Firebase في أعلى الملف.</div>` : '';
+const joinUrl = code => BASE_URL + '?g=' + code + (params.has('local') ? '&local' : '');
+const rankList = players => Object.entries(players || {}).map(([id,p]) => ({id, ...p, score: p.score || 0}))
+  .sort((a,b) => (b.score - a.score) || ((a.joinedAt||0) - (b.joinedAt||0)));
+const remaining = st => (!st || !st.startedAt) ? 0 : Math.max(0, st.startedAt + st.duration*1000 - (st.paused && st.pausedAt ? st.pausedAt : DB.now()));
+const stepsHTML = (steps, sol) => (steps && steps.length) ? `<ol class="steps">${steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : `<p>${esc(sol || '')}</p>`;
+
+/* ============================== HOST ============================== */
+const H = { code:null, state:null, players:{}, answers:{}, unsub:[], ansUnsub:null, ansQ:null, lastKey:'', autoRevealed:-1, revealing:false };
+
+function hostInit(){
+  if(store.sget('aiq_host') !== '1') return hostLogin();
+  hostHome();
+}
+function hostLogin(){
+  app.innerHTML = `<div class="center"><div class="card narrow">
+    <div class="brandrow" style="margin-bottom:14px">${brandHTML('lg')}</div>
+    <div class="logo">🤖</div><h1>${esc(GAME_TITLE)}</h1><p class="muted" style="margin-top:6px">دخول الهوست</p>
+    <form id="f"><input id="pw" class="field" type="password" placeholder="كلمة المرور" autocomplete="off">
+    <button class="btn big primary">دخول</button><p id="err" class="err"></p></form></div></div>`;
+  $('#pw').focus();
+  $('#f').onsubmit = e => { e.preventDefault();
+    if($('#pw').value === HOST_PASSWORD){ store.sset('aiq_host','1'); hostHome(); }
+    else $('#err').textContent = 'كلمة المرور غلط';
+  };
+}
+async function hostHome(){
+  const saved = store.get('aiq_host_code');
+  app.innerHTML = `<div class="center"><div class="card narrow home">${localBanner()}
+    <div class="brandrow" style="margin-bottom:14px">${brandHTML('lg')}</div>
+    <div class="logo">🎮</div><h1>${esc(GAME_TITLE)}</h1><div class="titleline"></div>
+    <p class="muted" style="margin-top:10px">${QUESTIONS.length} أسئلة جاهزة — الإجابة رقم يكتبه اللاعب</p>
+    <div class="stack" style="margin-top:18px">
+      <button id="new" class="btn big primary">🎮 إنشاء لعبة جديدة</button>
+      <div id="resumeWrap"></div>
+    </div>
+    <div class="qlist">${QUESTIONS.map((q,i)=>`${i+1}. ${esc(q.tag)} — ${isDynamic(q) ? 'الجواب يتحسب حسب عدد اللاعبين (دقيق 🎯)' : `الجواب ${fmt(q.answer)} ${esc(q.unit||'')} ${isExact(q)?'(دقيق 🎯)':`(من ${fmt(q.min ?? q.answer)} إلى ${fmt(q.max ?? q.answer)})`}`}${q.image?' 📸':''}${q.pieces?' 🧩':''}`).join('<br>')}</div>
+  </div></div>`;
+  $('#new').onclick = hostCreate;
+  if(saved){
+    const st = await DB.get(`games/${saved}/state`).catch(()=>null);
+    if(st && $('#resumeWrap')){
+      $('#resumeWrap').innerHTML = `<button id="resume" class="btn big">↩️ كمّل اللعبة الحالية (${esc(saved)})</button>`;
+      $('#resume').onclick = () => hostAttach(saved);
+    }
+  }
+}
+async function hostCreate(){
+  $('#new').disabled = true;
+  let code;
+  for(let i=0;i<6;i++){ code = String(Math.floor(1000 + Math.random()*9000)); const ex = await DB.get(`games/${code}/state`); if(!ex) break; }
+  // الأسئلة تنرسل للاعبين بدون الإجابات
+  const pub = QUESTIONS.map(q => ({ text:q.text, time:q.time||120, tag:q.tag||'', unit:q.unit||'', exact: isExact(q), image: !!q.image, pieces: q.pieces || null }));
+  try{
+    await DB.set(`games/${code}`, { createdAt: DB.ts(), questions: pub, state: { phase:'lobby', q:-1 } });
+  }catch(e){ toast('ما قدرنا ننشئ اللعبة — تأكد من إعدادات Firebase وقواعدها'); $('#new').disabled = false; return; }
+  hostAttach(code);
+}
+function hostAttach(code){
+  H.code = code; store.set('aiq_host_code', code);
+  H.unsub.forEach(f => f()); H.unsub = []; H.lastKey = ''; H.ansQ = null;
+  H.unsub.push(DB.on(`games/${code}/players`, p => { H.players = p || {}; hostLive(); }));
+  H.unsub.push(DB.on(`games/${code}/state`, st => { H.state = st; if(!st){ store.del('aiq_host_code'); hostHome(); return; } hostOnState(); }));
+}
+function hostOnState(){
+  const st = H.state;
+  if(H.ansQ !== st.q){
+    if(H.ansUnsub) H.ansUnsub();
+    H.answers = {}; H.ansQ = st.q; H.ansUnsub = null;
+    if(st.q >= 0) H.ansUnsub = DB.on(`games/${H.code}/answers/${st.q}`, a => { H.answers = a || {}; hostLive(); });
+  }
+  const key = `${st.phase}|${st.q}|${st.showParallel ? 1 : 0}|${st.paused ? 1 : 0}`;
+  if(key !== H.lastKey){ H.lastKey = key; hostRender(); } else hostLive();
+}
+function hostTop(st, q){
+  return `<div class="topbar"><span class="pill">سؤال ${st.q+1} من ${QUESTIONS.length}</span><span class="pill tag">${esc(q.tag)}</span>
+    ${isExact(q) ? `<span class="pill exact">🎯 الجواب لازم دقيق</span>` : `<span class="pill">↔️ فيه هامش للخطأ</span>`}
+    <span class="grow"></span><span class="pill" id="acount"></span>${brandHTML()}</div>`;
+}
+function toolsHTML(phase){
+  const b = (id, label, cls='') => `<button id="${id}" class="${cls}">${label}</button>`;
+  const st = H.state || {};
+  let t = '';
+  if(phase === 'question'){
+    t += st.paused ? b('t-resume','▶️ استئناف الوقت','on') : b('t-pause','⏸️ إيقاف الوقت');
+    t += b('t-plus','⏱️ +30 ث') + b('t-minus','⏱️ −30 ث');
+  }
+  if(phase === 'question' || phase === 'reveal' || phase === 'board'){
+    t += b('t-restart','🔁 أعد السؤال') + b('t-prev','⏮️ السؤال السابق') + b('t-skip','⏭️ تخطّى') + b('t-end','🏁 إنهاء وعرض الفائزين','warn');
+  }
+  if(phase === 'final') t += b('t-backboard','⏮️ رجوع للترتيب');
+  t += b('t-full','⛶ ملء الشاشة') + b('t-exit','🚪 خروج للقائمة');
+  return `<div class="tools">${t}</div>`;
+}
+function bindTools(){
+  const on = (id, fn) => { const e = $('#'+id); if(e) e.onclick = fn; };
+  on('t-pause', hostPause); on('t-resume', hostResume);
+  on('t-plus', () => DB.update(`games/${H.code}/state`, { duration: (H.state.duration||0) + 30 }));
+  on('t-minus', () => { const st = H.state; const minDur = Math.ceil(((st.paused && st.pausedAt ? st.pausedAt : DB.now()) - st.startedAt)/1000) + 5; DB.update(`games/${H.code}/state`, { duration: Math.max(minDur, (st.duration||0) - 30) }); });
+  on('t-restart', hostRestart); on('t-prev', hostPrev); on('t-skip', hostSkip); on('t-end', hostEnd);
+  on('t-backboard', () => DB.update(`games/${H.code}/state`, { phase:'board' }));
+  on('t-full', toggleFull); on('t-exit', hostExit);
+}
+function toggleFull(){
+  try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){ toast('ملء الشاشة مو مدعوم هنا'); }
+}
+async function hostPause(){
+  const st = H.state; if(!st || st.phase !== 'question' || st.paused) return;
+  await DB.update(`games/${H.code}/state`, { paused: true, pausedAt: DB.ts() });
+}
+async function hostResume(){
+  const st = H.state; if(!st || !st.paused) return;
+  await DB.update(`games/${H.code}/state`, { paused: false, pausedAt: null, startedAt: st.startedAt + Math.max(0, DB.now() - st.pausedAt) });
+}
+// يلغي نقاط وإجابات سؤال معيّن
+async function hostUndo(qi){
+  if(qi < 0) return;
+  const code = H.code;
+  const results = (await DB.get(`games/${code}/results/${qi}`)) || {};
+  const players = (await DB.get(`games/${code}/players`)) || {};
+  const up = {};
+  for(const pid in results){ if(players[pid]) up[`players/${pid}/score`] = Math.max(0, (players[pid].score || 0) - ((results[pid] && results[pid].pts) || 0)); }
+  up[`answers/${qi}`] = null; up[`results/${qi}`] = null; up[`reveal/${qi}`] = null;
+  await DB.update(`games/${code}`, up);
+}
+async function hostRestart(){
+  const qi = H.state.q; if(qi < 0) return;
+  if(!confirm(`إعادة السؤال ${qi+1}؟ إجاباته ونقاطه بتنمسح ويبدأ من جديد.`)) return;
+  await hostUndo(qi); H.autoRevealed = -1; await hostStartQ(qi);
+}
+async function hostPrev(){
+  const qi = H.state.q;
+  if(qi <= 0){ toast('هذا أول سؤال'); return; }
+  if(!confirm(`الرجوع للسؤال ${qi}؟ نقاط السؤال ${qi} و${qi+1} بتنمسح ويبدأ السؤال ${qi} من جديد.`)) return;
+  await hostUndo(qi); await hostUndo(qi-1); H.autoRevealed = -1; await hostStartQ(qi-1);
+}
+async function hostSkip(){
+  const st = H.state, qi = st.q, last = qi >= QUESTIONS.length - 1;
+  if(st.phase === 'question'){
+    if(!confirm('تخطّي هذا السؤال بدون نقاط؟')) return;
+    await hostUndo(qi);
+  }
+  H.autoRevealed = -1;
+  if(last) await DB.update(`games/${H.code}/state`, { phase:'final', paused:false });
+  else await hostStartQ(qi + 1);
+}
+async function hostEnd(){
+  if(!confirm('إنهاء اللعبة الحين وعرض الفائزين؟')) return;
+  await DB.update(`games/${H.code}/state`, { phase:'final', paused:false });
+}
+function hostExit(){
+  H.unsub.forEach(f=>f()); H.unsub = []; if(H.ansUnsub) H.ansUnsub(); H.ansUnsub = null; H.ansQ = null; H.state = null;
+  hostHome();
+}
+async function hostKick(pid){
+  const p = H.players[pid]; if(!p) return;
+  if(!confirm(`إخراج «${p.name}» من اللعبة؟`)) return;
+  await DB.remove(`games/${H.code}/players/${pid}`);
+}
+function hostRender(){ hostRenderInner(); bindTools(); }
+function hostRenderInner(){
+  const st = H.state, code = H.code;
+  stopConfetti();
+  if(st.phase === 'lobby'){
+    const url = joinUrl(code);
+    app.innerHTML = `<div class="host">${localBanner()}
+      <div class="lhead">${brandHTML('lg')}<div><div class="title">${esc(GAME_TITLE)}</div><div class="titleline"></div></div><span></span></div>
+      <div class="lobby">
+        <div class="left">
+          <div class="qrbox"><div id="qr"></div></div>
+          <div class="joinurl">امسح الباركود أو افتح: <b dir="ltr">${esc(url)}</b></div>
+          <div class="gamecode">كود اللعبة: <b>${esc(code)}</b></div>
+        </div>
+        <div class="right">
+          <div class="pcount"><span id="pc">0</span> لاعب داخل</div>
+          <div class="muted" style="line-height:1.8">جهّزوا تطبيق الذكاء الاصطناعي في جوالاتكم (Claude أو ChatGPT أو غيره) 🤖<br>الإجابات أرقام تكتبونها بأنفسكم — ما فيه خيارات تخمنون منها 😉</div>
+          ${rulesHTML()}
+          <div id="chips" class="chips"></div>
+          <div class="controls"><button id="start" class="btn primary huge">ابدأ اللعبة 🚀</button></div>
+        </div>
+      </div>${toolsHTML('lobby')}</div>`;
+    const qrEl = $('#qr');
+    if(window.QRCode){ new QRCode(qrEl, { text:url, width:400, height:400, colorDark:'#061a33', correctLevel: QRCode.CorrectLevel.M }); }
+    else qrEl.innerHTML = `<div class="qrfallback">ما قدرنا نحمّل الباركود (تأكد من الإنترنت).<br>شاركهم الرابط:<br><span dir="ltr">${esc(url)}</span></div>`;
+    $('#start').onclick = () => hostStartQ(0);
+  }
+  else if(st.phase === 'question'){
+    const q = QUESTIONS[st.q];
+    app.innerHTML = `<div class="host">
+      ${hostTop(st, q)}
+      ${q.image ? `<div class="qgrid"><div class="qtext small">${esc(q.text)}</div><div class="imgcard">${q.image}</div></div>` : `<div class="qtext ${q.text.length > 220 ? 'long' : ''}">${esc(q.text)}</div>`}
+      <div class="timerrow"><div class="timer" id="timer">${q.time}</div><div class="tbar"><i id="tbar"></i></div></div>
+      ${q.pieces ? `<div class="secret" style="font-size:clamp(17px,1.6vw,28px)">🧩 المعلومات موزعة على جوالاتكم — كل واحد عنده قطعة وحدة. تعاونوا وجمّعوها!</div>` : ''}
+      <div class="answerhint">✍️ اكتبوا الإجابة <u>رقم</u> في جوالاتكم ${q.unit ? `بـ<span class="unit">${esc(q.unit)}</span>` : ''}</div>
+      <div class="hint">💡 النسخ مقفول: اكتبوا سؤالكم للذكاء الاصطناعي بأسلوبكم وراجعوا فرضياته — الصح = ${POINTS_BASE} نقطة، والسرعة بونص لين ${POINTS_SPEED}</div>
+      ${st.paused ? `<div class="pausebar">⏸️ الوقت متوقف</div>` : ''}
+      <div class="controls"><button id="reveal" class="btn primary">اكشف الإجابة 👀</button></div>
+      ${toolsHTML('question')}
+    </div>`;
+    $('#reveal').onclick = hostReveal;
+    hostLive(); tick();
+  }
+  else if(st.phase === 'reveal'){
+    const q = QUESTIONS[st.q];
+    const R = st.ans || rangeOf(q, Object.keys(H.players).length);
+    app.innerHTML = `<div class="host">
+      ${hostTop(st, q)}
+      <div class="qtext small">${esc(q.text)}</div>
+      <div class="bigans">
+        <span class="v">✅ ${fmt(R.answer)} ${esc(q.unit||'')}</span>
+        <span class="r">${R.exact ? '🎯 المطلوب الرقم بالضبط' : `المقبول من ${fmt(R.min)} إلى ${fmt(R.max)}`}</span>
+        <span class="s" id="okcount"></span>
+      </div>
+      <div class="anslist" id="anslist"></div>
+      <div class="boxes">
+        <div class="box sol"><h3>🧠 طريقة التفكير للحل</h3>${stepsHTML(q.steps, st.solText || textOf(q.solution, Object.keys(H.players).length))}${q.image ? `<div class="imgsmall">${q.image}</div>` : ''}</div>
+        ${st.showParallel ? `<div class="box par"><h3>🔗 وش علاقتها بشغلنا؟</h3><p>${esc(q.parallel)}</p>${q.example ? `<p class="ex"><b>💡 مثال:</b> ${esc(q.example)}</p>` : ''}</div>` : ''}
+      </div>
+      <div class="controls">
+        ${st.showParallel ? '' : `<button id="par" class="btn">🔗 وش علاقتها بشغلنا؟</button>`}
+        <button id="board" class="btn primary">📊 الترتيب</button>
+      </div>
+      ${toolsHTML('reveal')}
+    </div>`;
+    if($('#par')) $('#par').onclick = () => DB.update(`games/${code}/state`, { showParallel: true });
+    $('#board').onclick = () => DB.update(`games/${code}/state`, { phase: 'board' });
+    hostLive();
+  }
+  else if(st.phase === 'board'){
+    const last = st.q >= QUESTIONS.length - 1;
+    const list = rankList(H.players).slice(0, 10);
+    app.innerHTML = `<div class="host">
+      <div class="hhead">${brandHTML('lg')}<span></span></div>
+      <div class="title">📊 الترتيب بعد سؤال ${st.q+1}</div>
+      <div class="board">${list.length ? list.map((p,i)=>`<div class="brow ${i===0?'top1':''}" style="animation-delay:${i*0.07}s"><span class="rk">${i+1}</span><span>${esc(p.avatar||'🙂')}</span><span class="nm">${esc(p.name)}</span><span class="sc">${p.score}</span></div>`).join('') : '<p class="muted" style="text-align:center">ما فيه لاعبين</p>'}</div>
+      <div class="controls">${last ? `<button id="next" class="btn primary huge">🏆 النتائج النهائية</button>` : `<button id="next" class="btn primary huge">السؤال التالي ⬅️</button>`}</div>
+      ${toolsHTML('board')}
+    </div>`;
+    $('#next').onclick = () => last ? DB.update(`games/${code}/state`, { phase:'final' }) : hostStartQ(st.q + 1);
+  }
+  else if(st.phase === 'final'){
+    const list = rankList(H.players);
+    const pod = (p, cls, n) => p ? `<div class="pod ${cls}"><div class="av">${esc(p.avatar||'🙂')}</div><div class="pn">${esc(p.name)}</div><div class="ps">${p.score} نقطة</div><div class="blk">${n}</div></div>` : '';
+    app.innerHTML = `<div class="host">
+      <div class="hhead">${brandHTML('lg')}<span class="title" style="font-size:clamp(24px,2.6vw,44px)">🏆 الأبطال</span></div>
+      <div class="podium">${pod(list[1],'p2',2)}${pod(list[0],'p1',1)}${pod(list[2],'p3',3)}</div>
+      <div class="finalmsg">
+        <h2>${esc(FINAL_MESSAGE.title)}</h2>
+        <p>${esc(FINAL_MESSAGE.body)}</p>
+        <div class="skills">${QUESTIONS.map(q=>`<span class="skill">${esc(q.tag)} ← ${esc(q.skill||'')}</span>`).join('')}</div>
+      </div>
+      <div class="controls"><button id="again" class="btn">🔄 لعبة جديدة</button></div>
+      ${toolsHTML('final')}
+    </div>`;
+    $('#again').onclick = () => { store.del('aiq_host_code'); H.unsub.forEach(f=>f()); H.unsub=[]; if(H.ansUnsub) H.ansUnsub(); hostHome(); };
+    startConfetti();
+  }
+}
+function hostLive(){
+  const st = H.state; if(!st) return;
+  const nPlayers = Object.keys(H.players).length;
+  if(st.phase === 'lobby'){
+    const pc = $('#pc'); if(pc) pc.textContent = nPlayers;
+    const chips = $('#chips');
+    if(chips){
+      const have = new Set([...chips.children].map(c => c.dataset.id));
+      Object.entries(H.players).sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0)).forEach(([id,p]) => {
+        if(have.has(id)) return;
+        const c = document.createElement('span'); c.className='chip'; c.dataset.id=id; c.textContent = `${p.avatar||'🙂'} ${p.name}`;
+        const k = document.createElement('button'); k.className='kick'; k.title='إخراج'; k.textContent='✕'; k.onclick = () => hostKick(id); c.appendChild(k);
+        chips.appendChild(c);
+      });
+      [...chips.children].forEach(c => { if(!H.players[c.dataset.id]) c.remove(); });
+    }
+  }
+  const nAns = Object.keys(H.answers).length;
+  const ac = $('#acount'); if(ac) ac.textContent = `${nAns} / ${nPlayers} جاوبوا`;
+  if(st.phase === 'question' && nPlayers > 0 && nAns >= nPlayers && H.autoRevealed !== st.q){
+    H.autoRevealed = st.q; setTimeout(hostReveal, 1200);
+  }
+  if(st.phase === 'reveal'){
+    const q = QUESTIONS[st.q], R = st.ans || rangeOf(q, nPlayers), lo = R.min, hi = R.max;
+    const rows = Object.entries(H.answers).map(([pid,a]) => ({ p: H.players[pid] || {}, v: a ? a.value : null, ok: inRange(a ? a.value : null, lo, hi) }))
+      .sort((a,b) => Math.abs((a.v ?? 1e18) - R.answer) - Math.abs((b.v ?? 1e18) - R.answer));
+    const okN = rows.filter(r => r.ok).length;
+    const oc = $('#okcount'); if(oc) oc.textContent = `${okN} من ${nAns} جاوبوا صح`;
+    const al = $('#anslist'); if(al) al.innerHTML = rows.map(r => `<span class="achip ${r.ok?'ok':''}">${esc(r.p.avatar||'🙂')} ${esc(r.p.name||'')}: <b dir="ltr">${fmt(r.v)}</b></span>`).join('');
+  }
+}
+async function hostStartQ(qi){
+  const q = QUESTIONS[qi];
+  await DB.update(`games/${H.code}/state`, { phase:'question', q:qi, startedAt: DB.ts(), duration: q.time || 120, showParallel:false, ans: null, solText: null, paused: false, pausedAt: null });
+}
+async function hostReveal(){
+  const st = H.state;
+  if(!st || st.phase !== 'question' || H.revealing) return;
+  H.revealing = true;
+  try{
+    const qi = st.q, q = QUESTIONS[qi], code = H.code;
+    const answers = (await DB.get(`games/${code}/answers/${qi}`)) || {};
+    const players = (await DB.get(`games/${code}/players`)) || {};
+    const nP = Object.keys(players).length;
+    const R = rangeOf(q, nP), lo = R.min, hi = R.max, solText = textOf(q.solution, nP);
+    const start = st.startedAt, dur = st.duration * 1000, deadline = start + dur + 2500;
+    const up = {};
+    for(const pid in answers){
+      const a = answers[pid] || {};
+      const at = a.at || start;
+      const ok = inRange(a.value, lo, hi) && at <= deadline;
+      const frac = Math.max(0, Math.min(1, 1 - (at - start) / dur));
+      const speed = ok ? Math.round(POINTS_SPEED * frac) : 0;
+      const pts = ok ? POINTS_BASE + speed : 0;
+      up[`results/${qi}/${pid}`] = { pts, base: ok ? POINTS_BASE : 0, speed, correct: ok, value: a.value ?? null };
+      if(players[pid]) up[`players/${pid}/score`] = (players[pid].score || 0) + pts;
+    }
+    up[`reveal/${qi}`] = { answer: R.answer, min: lo, max: hi, exact: R.exact, unit: q.unit || '', solution: solText, steps: q.steps || null, parallel: q.parallel || '', example: q.example || '' };
+    up['state/paused'] = false;
+    up['state/ans'] = R;
+    up['state/solText'] = solText;
+    up['state/phase'] = 'reveal';
+    up['state/showParallel'] = false;
+    await DB.update(`games/${code}`, up);
+  }catch(e){ toast('صار خطأ في الكشف، جرّب مرة ثانية'); }
+  H.revealing = false;
+}
+
+/* ============================== PLAYER ============================== */
+const P = { code:null, me:null, state:null, questions:null, players:{}, myAnswer:null, result:null, reveal:null, subs:[], qsubs:[], qOf:null, key:'', timeUp:false, sending:false, seen:false };
+
+function playerInit(){
+  const g = (params.get('g') || '').trim();
+  if(g){ const saved = store.pget('aiq_p_' + g); if(saved && saved.pid) return playerAttach(g, saved); }
+  playerJoinForm(g);
+}
+function playerJoinForm(code, msg){
+  let avatar = AVATARS[Math.floor(Math.random()*AVATARS.length)];
+  app.innerHTML = `<div class="center"><div class="card narrow">
+    <div class="brandrow" style="margin-bottom:12px">${brandHTML('lg')}</div>
+    <h1>${esc(GAME_TITLE)}</h1><div class="titleline"></div>
+    <form id="jf" autocomplete="off">
+      <div style="margin-top:12px" class="muted">اضغط على الشكل تغيّره 👇</div>
+      <button type="button" id="av" class="avpick">${avatar}</button>
+      ${code ? `<input type="hidden" id="code" value="${esc(code)}">` : `<input id="code" class="field" inputmode="numeric" maxlength="6" placeholder="كود اللعبة (الرقم اللي على الشاشة)">`}
+      <input id="nm" class="field" maxlength="20" placeholder="اسمك المستعار 😎">
+      <button class="btn big primary" id="go">ادخل 🚀</button>
+      <p id="err" class="err">${esc(msg||'')}</p>
+    </form>
+    <button type="button" id="tohost" class="btn ghost" style="margin-top:6px">👑 دخول الهوست</button>
+    </div></div>`;
+  $('#tohost').onclick = () => { IS_HOST = true; try{ history.replaceState(null,'','?host' + (params.has('local') ? '&local' : '')); }catch(_){} hostInit(); };
+  $('#av').onclick = () => { avatar = AVATARS[(AVATARS.indexOf(avatar)+1) % AVATARS.length]; $('#av').textContent = avatar; };
+  $('#jf').onsubmit = async e => {
+    e.preventDefault();
+    const c = String(parseNum($('#code').value) ?? '').trim(), name = $('#nm').value.trim().replace(/\s+/g,' ');
+    if(!c) return $('#err').textContent = 'اكتب كود اللعبة';
+    if(!name) return $('#err').textContent = 'اكتب اسم مستعار';
+    $('#go').disabled = true; $('#err').textContent = '';
+    try{
+      const st = await DB.get(`games/${c}/state`);
+      if(!st){ $('#go').disabled = false; return $('#err').textContent = 'ما لقينا لعبة بهذا الكود 🤔'; }
+      const pid = 'p' + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-3);
+      const me = { pid, name, avatar };
+      await DB.set(`games/${c}/players/${pid}`, { name, avatar, score:0, joinedAt: DB.ts() });
+      store.pset('aiq_p_' + c, me);
+      try{ history.replaceState(null, '', '?g=' + c + (params.has('local') ? '&local' : '')); }catch(_){}
+      playerAttach(c, me);
+    }catch(err){ $('#go').disabled = false; $('#err').textContent = 'صار خطأ في الاتصال، جرّب مرة ثانية'; }
+  };
+}
+async function playerAttach(code, me){
+  P.code = code; P.me = me; P.seen = false;
+  app.innerHTML = `<div class="center"><div class="bigemoji">⏳</div></div>`;
+  const st = await DB.get(`games/${code}/state`).catch(()=>null);
+  if(!st){ store.pdel('aiq_p_' + code); return playerJoinForm('', 'اللعبة هذي انتهت أو الكود غلط'); }
+  const rec = await DB.get(`games/${code}/players/${me.pid}`).catch(()=>null);
+  if(!rec) await DB.set(`games/${code}/players/${me.pid}`, { name: me.name, avatar: me.avatar, score: 0, joinedAt: DB.ts() });
+  P.subs.push(DB.on(`games/${code}/questions`, q => { P.questions = q; playerRender(); }));
+  P.subs.push(DB.on(`games/${code}/players`, p => {
+    P.players = p || {};
+    if(P.players[me.pid]) P.seen = true;
+    else if(P.seen){ playerLeave('تم إخراجك من اللعبة'); return; }
+    playerLive();
+  }));
+  P.subs.push(DB.on(`games/${code}/state`, s => {
+    P.state = s;
+    if(!s){ playerLeave('اللعبة انتهت 👋'); return; }
+    playerOnState();
+  }));
+}
+function playerLeave(msg){
+  P.subs.forEach(f=>f()); P.subs = []; P.qsubs.forEach(f=>f()); P.qsubs = [];
+  store.pdel('aiq_p_' + P.code);
+  playerJoinForm('', msg);
+}
+function playerOnState(){
+  const st = P.state;
+  if(P.qOf !== st.q){
+    P.qsubs.forEach(f=>f()); P.qsubs = [];
+    P.qOf = st.q; P.myAnswer = null; P.result = null; P.reveal = null; P.timeUp = false;
+    if(st.q >= 0){
+      const b = `games/${P.code}`;
+      P.qsubs.push(DB.on(`${b}/answers/${st.q}/${P.me.pid}`, a => { P.myAnswer = a; playerRender(); }));
+      P.qsubs.push(DB.on(`${b}/results/${st.q}/${P.me.pid}`, r => { P.result = r; playerRender(); }));
+      P.qsubs.push(DB.on(`${b}/reveal/${st.q}`, r => { P.reveal = r; playerRender(); }));
+    }
+  }
+  if(st.phase === 'question' && remaining(st) > 0) P.timeUp = false;
+  playerRender();
+}
+function myPiece(q){
+  if(!q || !q.pieces || !q.pieces.length) return null;
+  const order = Object.entries(P.players).sort((a,b) => ((a[1].joinedAt||0) - (b[1].joinedAt||0)) || (a[0] < b[0] ? -1 : 1)).map(e => e[0]);
+  const i = Math.max(0, order.indexOf(P.me.pid));
+  return q.pieces[i % q.pieces.length];
+}
+function myScore(){ const p = P.players[P.me.pid]; return p ? (p.score || 0) : 0; }
+function myRank(){ const l = rankList(P.players); const i = l.findIndex(p => p.id === P.me.pid); return { rank: i + 1, total: l.length }; }
+function header(){
+  return `<div class="phead"><span class="av">${esc(P.me.avatar)}</span><span class="nm">${esc(P.me.name)}</span><span class="sc" id="myscore">${myScore()} نقطة</span></div>`;
+}
+function playerRender(force){
+  const st = P.state; if(!st || !P.me) return;
+  const key = [st.phase, st.q, st.paused ? 'P' : '', P.myAnswer ? P.myAnswer.value : '-', P.result ? 1 : 0, P.reveal ? 1 : 0, st.showParallel ? 1 : 0, P.timeUp ? 1 : 0, P.questions ? 1 : 0].join('|');
+  if(key === P.key && !force){ playerLive(); return; }
+  // لا تمسح اللي يكتبه اللاعب إذا تغيّر شي ثانوي أثناء السؤال
+  const typing = $('#ans') ? $('#ans').value : null;
+  P.key = key;
+  stopConfetti();
+  const q = (P.questions && st.q >= 0) ? P.questions[st.q] : null;
+  const nQ = P.questions ? P.questions.length : 0;
+  const unit = q && q.unit ? esc(q.unit) : '';
+  let body = '';
+
+  if(st.phase === 'lobby'){
+    body = `<div class="pmid">${brandHTML()}<div class="bigemoji">✅</div><h2>أنت داخل!</h2>
+      <p class="muted" style="line-height:1.8">انتظر الهوست يبدأ اللعبة…<br>وجهّز تطبيق الذكاء الاصطناعي في جوالك 🤖</p>
+      <div class="pill" id="pcount">${Object.keys(P.players).length} لاعب داخل</div>${rulesHTML()}</div>`;
+  }
+  else if(st.phase === 'question' && q){
+    if(P.myAnswer){
+      body = `<div class="pmid"><div class="bigemoji">🔒</div><h2>وصلت إجابتك!</h2>
+        <div class="myans"><span dir="ltr">${fmt(P.myAnswer.value)}</span> ${unit}</div>
+        <p class="muted">انتظر الكشف… 🤞</p>
+        <div class="ptimer"><div class="timer" id="timer"></div></div></div>`;
+    } else if(P.timeUp){
+      body = `<div class="pmid"><div class="bigemoji">⏰</div><h2>خلص الوقت!</h2><p class="muted">انتظر الكشف…</p></div>`;
+    } else {
+      body = `<div class="topbar"><span class="pill">سؤال ${st.q+1} من ${nQ}</span><span class="pill tag">${esc(q.tag)}</span>${q.exact ? `<span class="pill exact">🎯 دقيق</span>` : ''}</div>
+        <div class="ptimer"><div class="timer" id="timer"></div><div class="tbar"><i id="tbar"></i></div></div>
+        ${st.paused ? `<div class="secret">⏸️ الهوست وقّف الوقت مؤقتاً… كمّل تفكير 😉</div>` : ''}
+        <div class="pq pqimg"><img id="qimg" alt="السؤال" draggable="false"></div>
+        ${q.image ? `<div class="secret">📸 السؤال فيه رسمة على <b>الشاشة الكبيرة</b> — صوّرها وأرسلها للذكاء الاصطناعي مع السؤال</div>` : ''}
+        ${myPiece(q) ? `<div class="secret">🧩 معلومتك السرية: <b>${esc(myPiece(q))}</b><br>باقي المعلومات عند غيرك… دوّر عليهم!</div>` : ''}
+        <div class="tipbox">🔒 النسخ مقفول 😉<br>✍️ <b>اكتب سؤالك للذكاء الاصطناعي بأسلوبك:</b> وش المعطيات؟ وش المطلوب بالضبط؟ وبأي وحدة؟</div>
+        <form class="ansbox" id="af" autocomplete="off">
+          <div class="ansrow"><input id="ans" class="field" inputmode="decimal" placeholder="اكتب الرقم">${unit ? `<span class="unit">${unit}</span>` : ''}</div>
+          <button class="btn big primary" id="send" style="margin-top:12px" ${st.paused ? 'disabled' : ''}>${st.paused ? '⏸️ الإرسال متوقف' : 'أرسل الإجابة ✅'}</button>
+          <div class="ansnote">${q.exact ? '🎯 هذا السؤال جوابه لازم يكون دقيق' : '↔️ فيه هامش بسيط للخطأ'} — تقدر ترسل مرة وحدة بس</div>
+          <p id="aerr" class="err" style="margin-top:4px"></p>
+        </form>`;
+    }
+  }
+  else if(st.phase === 'reveal' && q){
+    const r = P.result, rv = P.reveal;
+    const head = r ? (r.correct ? `<div class="bigemoji">🎉</div><div class="res ok">إجابة صحيحة!</div><div class="pts">+${r.pts}</div><div class="breakdown">${r.base ?? POINTS_BASE} إجابة صحيحة + <b>${r.speed ?? (r.pts - POINTS_BASE)}</b> بونص سرعة ⚡</div>`
+                               : `<div class="bigemoji">😅</div><div class="res bad">للأسف… برّا الهامش</div>`)
+                   : `<div class="bigemoji">⏰</div><div class="res bad">ما جاوبت</div>`;
+    body = `<div class="pmid">${head}
+      ${r ? `<div class="muted">إجابتك: <b dir="ltr" style="color:#fff">${fmt(r.value)}</b> ${unit}</div>` : ''}
+      ${rv ? `<div class="pbox"><b>الإجابة الصحيحة: ${fmt(rv.answer)} ${unit}</b> <span class="muted">${rv.exact ? '(دقيق)' : `(المقبول ${fmt(rv.min)} – ${fmt(rv.max)})`}</span><div class="muted" style="margin-top:6px"><b style="color:#fff">🧠 طريقة التفكير:</b>${stepsHTML(rv.steps, rv.solution)}</div></div>` : ''}
+      ${rv && st.showParallel ? `<div class="pbox par"><b>🔗 وش علاقتها بشغلنا؟</b><br>${esc(rv.parallel)}${rv.example ? `<div class="ex"><b>💡 مثال:</b> ${esc(rv.example)}</div>` : ''}</div>` : ''}
+    </div>`;
+  }
+  else if(st.phase === 'board'){
+    const {rank, total} = myRank();
+    body = `<div class="pmid"><div class="bigemoji">${rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'📊'}</div>
+      <h2 id="rankline">ترتيبك ${rank} من ${total}</h2><div class="pts" id="bigscore">${myScore()}</div><p class="muted">انتظر السؤال الجاي…</p></div>`;
+  }
+  else if(st.phase === 'final'){
+    const {rank, total} = myRank();
+    body = `<div class="pmid"><div class="bigemoji">${rank===1?'🏆':rank<=3?'🎖️':'👏'}</div>
+      <h2>ترتيبك النهائي: ${rank} من ${total}</h2><div class="pts">${myScore()} نقطة</div>
+      <div class="pbox par"><b>${esc(FINAL_MESSAGE.title)}</b><br>${esc(FINAL_MESSAGE.body)}</div></div>`;
+    if(rank && rank <= 3) setTimeout(startConfetti, 100);
+  }
+  else {
+    body = `<div class="pmid"><div class="bigemoji">⏳</div></div>`;
+  }
+  app.innerHTML = `<div class="pl">${header()}<div class="pbody">${body}</div><div class="pfoot">${esc(BRAND.name)} ${esc(BRAND.full)}</div></div>`;
+
+  const af = $('#af');
+  if(af){
+    if(typing) $('#ans').value = typing;
+    af.onsubmit = e => { e.preventDefault(); playerAnswer(); };
+  }
+  if($('#qimg')) drawQuestion(q.text);
+  tick();
+}
+function playerLive(){
+  const s = $('#myscore'); if(s) s.textContent = myScore() + ' نقطة';
+  const pc = $('#pcount'); if(pc) pc.textContent = Object.keys(P.players).length + ' لاعب داخل';
+  if(P.state && P.state.phase === 'board'){
+    const {rank,total} = myRank(); const rl = $('#rankline'); if(rl) rl.textContent = `ترتيبك ${rank} من ${total}`;
+    const bs = $('#bigscore'); if(bs) bs.textContent = myScore();
+  }
+}
+async function playerAnswer(){
+  const st = P.state;
+  if(P.myAnswer || P.sending || !st || st.phase !== 'question' || st.paused || remaining(st) <= 0) return;
+  const raw = $('#ans').value.trim();
+  const v = parseNum(raw);
+  if(v == null){ $('#aerr').textContent = 'اكتب رقم 🙏'; return; }
+  P.sending = true;
+  P.myAnswer = { value: v }; playerRender(true);
+  try{ await DB.set(`games/${P.code}/answers/${st.q}/${P.me.pid}`, { value: v, raw: raw.slice(0,40), at: DB.ts() }); }
+  catch(e){ P.myAnswer = null; playerRender(true); toast('ما وصلت إجابتك، جرّب مرة ثانية'); }
+  P.sending = false;
+}
+// يرسم نص السؤال كصورة عشان ما ينسخ — اللاعب لازم يكتب سؤاله للذكاء الاصطناعي بنفسه
+async function drawQuestion(text){
+  const img = $('#qimg'); if(!img) return;
+  try{ if(document.fonts) await Promise.race([document.fonts.load('700 44px Cairo'), new Promise(r => setTimeout(r, 1500))]); }catch(e){}
+  const W = 880, pad = 40, fs = 44, lh = fs * 1.7;
+  const cv = document.createElement('canvas'); const ctx = cv.getContext('2d');
+  const font = `700 ${fs}px Cairo, "Segoe UI", Tahoma, sans-serif`;
+  ctx.font = font; ctx.direction = 'rtl';
+  const lines = [];
+  String(text).split('\n').forEach(par => {
+    let line = '';
+    par.split(/\s+/).filter(Boolean).forEach(w => {
+      const t = line ? line + ' ' + w : w;
+      if(ctx.measureText(t).width > W - pad*2 - 12 && line){ lines.push(line); line = w; } else line = t;
+    });
+    lines.push(line);
+  });
+  cv.width = W; cv.height = Math.ceil(pad*2 + lines.length * lh);
+  const c = cv.getContext('2d');
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, cv.width, cv.height);
+  c.fillStyle = '#293280'; c.fillRect(W - 12, 0, 12, cv.height);
+  c.font = font; c.direction = 'rtl'; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = '#1b2363';
+  lines.forEach((l, i) => c.fillText(l, W - pad - 12, pad + lh * i + lh / 2));
+  if($('#qimg') === img) img.src = cv.toDataURL('image/png');
+}
+function copyText(t){
+  const done = () => toast('تم النسخ ✅ الصقه في تطبيق الذكاء الاصطناعي');
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('ما قدرنا ننسخ — انسخه يدوي'); } ta.remove(); };
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
+}
+
+/* ============================== مؤقت ============================== */
+function tick(){
+  const st = IS_HOST ? H.state : P.state;
+  if(!st || st.phase !== 'question' || !st.startedAt) return;
+  const total = st.duration * 1000, rem = remaining(st);
+  const el = $('#timer'); if(el){ el.textContent = st.paused ? '⏸️' : Math.ceil(rem/1000); el.classList.toggle('low', rem < 10000 && !st.paused); el.classList.toggle('paused', !!st.paused); }
+  const b = $('#tbar'); if(b) b.style.width = Math.max(0, Math.min(100, rem/total*100)) + '%';
+  if(IS_HOST && rem <= 0 && H.autoRevealed !== st.q){ H.autoRevealed = st.q; hostReveal(); }
+  if(!IS_HOST && rem <= 0 && !P.myAnswer && !P.timeUp){ P.timeUp = true; playerRender(true); }
+}
+setInterval(tick, 250);
+
+/* ============================== احتفال ============================== */
+let confettiRAF = null;
+function startConfetti(){
+  const cv = document.getElementById('confetti'); cv.classList.remove('hidden');
+  const ctx = cv.getContext('2d'); const W = cv.width = innerWidth, Hh = cv.height = innerHeight;
+  const cols = ['#293280','#6f86f0','#a4a09e','#e6e3e1','#ffffff','#ffc94d'];
+  const ps = Array.from({length:160}, () => ({ x:Math.random()*W, y:-Math.random()*Hh, w:6+Math.random()*8, h:8+Math.random()*10, vy:2+Math.random()*3, vx:-1+Math.random()*2, r:Math.random()*6, vr:-.1+Math.random()*.2, c:cols[Math.floor(Math.random()*cols.length)] }));
+  let frames = 0;
+  cancelAnimationFrame(confettiRAF);
+  (function loop(){
+    ctx.clearRect(0,0,W,Hh);
+    ps.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; if(p.y>Hh && frames<420) { p.y=-10; p.x=Math.random()*W; }
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); });
+    frames++;
+    if(frames < 700) confettiRAF = requestAnimationFrame(loop); else stopConfetti();
+  })();
+}
+function stopConfetti(){ cancelAnimationFrame(confettiRAF); const cv = document.getElementById('confetti'); if(cv) cv.classList.add('hidden'); }
+
+/* ============================== تشغيل ============================== */
+document.addEventListener('keydown', e => {
+  if(!IS_HOST || !H.state || (e.target && e.target.tagName === 'INPUT')) return;
+  if(e.code === 'Space' && H.state.phase === 'question'){ e.preventDefault(); H.state.paused ? hostResume() : hostPause(); }
+  if(e.key === 'f' || e.key === 'F') toggleFull();
+});
+['copy','cut','contextmenu','dragstart'].forEach(ev => document.addEventListener(ev, e => {
+  if(e.target && e.target.closest && e.target.closest('input')) return;
+  e.preventDefault();
+}));
+if(DB){
+  if(IS_HOST) hostInit(); else playerInit();
+}
+</script>
+</body>
+</html>
